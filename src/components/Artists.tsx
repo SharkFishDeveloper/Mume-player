@@ -11,6 +11,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { searchArtists } from "../api/saavn";
 import FILTER_OPTIONS from "../../util/ApplyFilters";
 import CircleLoader from "./Loading";
+import { useNavigation } from "@react-navigation/native";
+
 
 /* ---------------- helpers ---------------- */
 
@@ -35,6 +37,7 @@ function applyArtistFilter(list: any[], filter: string) {
 /* ---------------- component ---------------- */
 
 const Artists = ({searchQuery}:{searchQuery:string}) => {
+  const navigation = useNavigation<any>();
   const [allArtists, setAllArtists] = useState<any[]>([]);
   const [filter, setFilter] =
   useState<typeof FILTER_OPTIONS[number]>("Date Added");
@@ -69,8 +72,18 @@ const Artists = ({searchQuery}:{searchQuery:string}) => {
       item.songs?.length ??
       Math.floor(Math.random() * 30) + 5;
 
-    return (
-      <View className="flex-row items-center mb-5">
+   return (
+  <TouchableOpacity
+    className="flex-row items-center mb-5"
+    activeOpacity={0.7}
+    onPress={() =>
+      navigation.navigate("ArtistSongs", {
+        artistId: item.id,
+        artistName: item.name,
+        artistImage: item.imageUrl,
+      })
+    }
+  >
         <Image
           source={{ uri: item.imageUrl }}
           className="w-16 h-16 rounded-full"
@@ -97,7 +110,7 @@ const Artists = ({searchQuery}:{searchQuery:string}) => {
             color="#A3A3A3"
           />
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     );
   };
 

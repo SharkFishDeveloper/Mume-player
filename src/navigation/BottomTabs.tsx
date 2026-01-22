@@ -1,7 +1,10 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import HomeScreen from "../screens/HomeScreen";
-import { Text } from "react-native";
+import { Settings, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Favourites from "../screens/Favourites";
+import Playlists from "../screens/Playlists";
+import SettingsScreen from "../screens/Settings";
 
 const Tab = createBottomTabNavigator();
 
@@ -38,15 +41,15 @@ export default function BottomTabs() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen
         name="Favorites"
-        component={() => <Placeholder title="Favorites" />}
+        component={() => <Favourites/>}
       />
       <Tab.Screen
         name="Playlists"
-        component={() => <Placeholder title="Playlists" />}
+        component={() => <Playlists/>}
       />
       <Tab.Screen
         name="Settings"
-        component={() => <Placeholder title="Settings" />}
+        component={() => <SettingsScreen/>}
       />
     </Tab.Navigator>
   );

@@ -12,8 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { searchAlbums } from "../api/saavn";
 import getImage from "../../util/getImage";
 import CircleLoader from "./Loading";
-
-const BASE_URL = "https://saavn.sumit.co/api";
+import PlaylistSongActionSheet from "../components/PlaylistSongActionSheet";
 
 const FILTERS = ["Date Modified", "Ascending", "Descending"] as const;
 
@@ -28,10 +27,8 @@ function applyAlbumFilter(list: any[], filter: string) {
   switch (filter) {
     case "Ascending":
       return data.sort((a, b) => a.name.localeCompare(b.name));
-
     case "Descending":
       return data.sort((a, b) => b.name.localeCompare(a.name));
-
     case "Date Modified":
     default:
       return data;
@@ -40,24 +37,27 @@ function applyAlbumFilter(list: any[], filter: string) {
 
 /* ---------------- component ---------------- */
 
-const Albums = ({searchQuery}:{searchQuery:string}) => {
+const Albums = ({ searchQuery }: { searchQuery: string }) => {
   const [allAlbums, setAllAlbums] = useState<any[]>([]);
   const [filter, setFilter] =
     useState<typeof FILTERS[number]>("Date Modified");
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [loading,setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
+  /* 🔹 Action sheet state */
+  const [showSheet, setShowSheet] = useState(false);
+  const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
 
   useEffect(() => {
-    setLoading(true)
+    setLoading(true);
     async function loadAlbums() {
       const albums = await searchAlbums(searchQuery);
       setAllAlbums(albums);
-      setLoading(false)
+      setLoading(false);
     }
-    setTimeout(()=>{
-      loadAlbums();
-    },500)
+
+    const timer = setTimeout(loadAlbums, 500);
+    return () => clearTimeout(timer);
   }, [searchQuery]);
 
   const albums = useMemo(
@@ -77,12 +77,19 @@ const Albums = ({searchQuery}:{searchQuery:string}) => {
           <View className="flex-row justify-between items-start">
             <Text
               numberOfLines={1}
-              className="text-black dark:text-white font-semibold flex-1 pr-2"
+              className="text-black font-semibold flex-1 pr-2"
             >
               {item.name}
             </Text>
 
-            <TouchableOpacity>
+            {/* ✅ Ellipsis opens action sheet */}
+            <TouchableOpacity
+              hitSlop={10}
+              onPress={() => {
+                setSelectedAlbum(item);
+                setShowSheet(true);
+              }}
+            >
               <Ionicons
                 name="ellipsis-vertical"
                 size={16}
@@ -104,7 +111,7 @@ const Albums = ({searchQuery}:{searchQuery:string}) => {
   };
 
   return (
-    <View className="flex-1 bg-white dark:bg-black px-4 pt-4">
+    <View className="flex-1 bg-white px-4 pt-4">
       {/* Top Row */}
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-gray-500 text-sm">
@@ -118,34 +125,29 @@ const Albums = ({searchQuery}:{searchQuery:string}) => {
           <Text className="text-orange-500 text-sm font-medium">
             {filter}
           </Text>
-          <Ionicons
-            name="swap-vertical"
-            size={14}
-            color="#F97316"
-          />
+          <Ionicons name="swap-vertical" size={14} color="#F97316" />
         </TouchableOpacity>
       </View>
 
       {/* Albums Grid */}
-      {loading ?
-       <View className="flex-1 items-center justify-center">
-            <CircleLoader />
-          </View>
-      : (
-
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <CircleLoader />
+        </View>
+      ) : (
         <FlatList
-        data={albums}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        numColumns={2}
-        columnWrapperStyle={{ justifyContent: "space-between" }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        scrollEnabled={false} 
-      />
+          data={albums}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          numColumns={2}
+          columnWrapperStyle={{ justifyContent: "space-between" }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          scrollEnabled={false}
+        />
       )}
 
-      {/* Filter Dropdown */}
+      {/* Filter Modal */}
       <Modal
         visible={showFilterModal}
         transparent
@@ -157,42 +159,44 @@ const Albums = ({searchQuery}:{searchQuery:string}) => {
           activeOpacity={1}
           onPress={() => setShowFilterModal(false)}
         >
-          <View className="absolute top-20 right-4 w-56 bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg">
-            {FILTERS.map((option) => {
-              const active = filter === option;
-
-              return (
-                <TouchableOpacity
-                  key={option}
-                  onPress={() => {
-                    setFilter(option);
-                    setShowFilterModal(false);
-                  }}
-                  className="flex-row justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-gray-700"
+          <View className="absolute top-20 right-4 w-56 bg-white rounded-xl border border-gray-200 shadow-lg">
+            {FILTERS.map((option) => (
+              <TouchableOpacity
+                key={option}
+                onPress={() => {
+                  setFilter(option);
+                  setShowFilterModal(false);
+                }}
+                className="flex-row justify-between items-center px-4 py-3 border-b border-gray-100"
+              >
+                <Text
+                  className={
+                    option === filter
+                      ? "text-orange-500 font-medium"
+                      : "text-black"
+                  }
                 >
-                  <Text
-                    className={
-                      active
-                        ? "text-orange-500 font-medium"
-                        : "text-black dark:text-white"
-                    }
-                  >
-                    {option}
-                  </Text>
-
-                  <View
-                    className={
-                      active
-                        ? "w-4 h-4 rounded-full border-2 border-orange-500"
-                        : "w-4 h-4 rounded-full border border-gray-400"
-                    }
-                  />
-                </TouchableOpacity>
-              );
-            })}
+                  {option}
+                </Text>
+                <View
+                  className={
+                    option === filter
+                      ? "w-4 h-4 rounded-full border-2 border-orange-500"
+                      : "w-4 h-4 rounded-full border border-gray-400"
+                  }
+                />
+              </TouchableOpacity>
+            ))}
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <PlaylistSongActionSheet
+        visible={showSheet}
+        song={selectedAlbum}
+        onClose={() => setShowSheet(false)}
+        text="album"
+      />
     </View>
   );
 };

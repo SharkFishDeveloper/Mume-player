@@ -12,8 +12,36 @@ import { useQueueStore } from "../store/useQueueStore";
 import { usePlayerStore } from "../store/usePlayerStore";
 import type { Result } from "../types/saavn";
 import { useEffect, useState, type ComponentProps } from "react";
-import { isFavourite, toggleFavourite } from "../../util/favourite";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { addToPlaylist, removeFromPlaylist } from "../storage/playlist";
+
+/* ---------------- favourites storage ---------------- */
+
+const FAV_KEY = "FAVOURITE_SONGS";
+
+async function getFavourites(): Promise<Result[]> {
+  const raw = await AsyncStorage.getItem(FAV_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+async function isFavouriteSong(id: string) {
+  const list = await getFavourites();
+  return list.some((s) => s.id === id);
+}
+
+async function toggleFavouriteSong(song: Result) {
+  const list = await getFavourites();
+  const exists = list.some((s) => s.id === song.id);
+
+  const updated = exists
+    ? list.filter((s) => s.id !== song.id)
+    : [...list, song];
+
+  await AsyncStorage.setItem(FAV_KEY, JSON.stringify(updated));
+  return !exists;
+}
+
+/* ---------------- types ---------------- */
 
 type ActionKey =
   | "playNext"
@@ -48,24 +76,27 @@ interface SongActionSheetProps {
   song: Result | null;
 }
 
-const SongActionSheet = ({ visible, onClose, song }: SongActionSheetProps) => {
-  /* ---------------- hooks (ALWAYS RUN) ---------------- */
+/* ---------------- component ---------------- */
 
+const SongActionSheet = ({ visible, onClose, song }: SongActionSheetProps) => {
   const { playNext, addToQueue } = useQueueStore();
   const { currentSong, play } = usePlayerStore();
 
   const [favourite, setFavourite] = useState(false);
   const { height } = Dimensions.get("window");
 
+  /* -------- load favourite state -------- */
+
   useEffect(() => {
     if (!song) {
       setFavourite(false);
       return;
     }
-    isFavourite(song.id).then(setFavourite);
+
+    isFavouriteSong(song.id).then(setFavourite);
   }, [song?.id]);
 
-  /* ---------------- helpers ---------------- */
+  /* -------- helpers -------- */
 
   const formatDuration = (seconds: number) => {
     const min = Math.floor(seconds / 60);
@@ -89,7 +120,7 @@ const SongActionSheet = ({ visible, onClose, song }: SongActionSheetProps) => {
         break;
 
       case "addQueue":
-         if (!currentSong) {
+        if (!currentSong) {
           play(song);
         } else {
           playNext(song);
@@ -109,7 +140,7 @@ const SongActionSheet = ({ visible, onClose, song }: SongActionSheetProps) => {
           `Name: ${song.name}
 Artist: ${artistName}
 Album: ${song.album?.name ?? "—"}
-Year: ${song.year}`
+Year: ${song.year ?? "—"}`
         );
         break;
 
@@ -155,8 +186,8 @@ Year: ${song.year}`
 
                 <TouchableOpacity
                   onPress={async () => {
-                    const newState = await toggleFavourite(song.id);
-                    setFavourite(newState);
+                    const next = await toggleFavouriteSong(song);
+                    setFavourite(next);
                   }}
                   hitSlop={10}
                 >

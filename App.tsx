@@ -1,15 +1,15 @@
 import { NavigationContainer } from "@react-navigation/native";
 import "./global.css";
-import BottomTabs from "./src/navigation/BottomTabs";
+import RootStack from "./src/navigation/RootStack";
 import NowPlayingDrawer from "./src/components/NowPlayingDrawer";
+import { useThemeStore } from "./src/store/useThemeStore";
 
 export default function App() {
+  
   return (
-    <>
-    <NavigationContainer>
-      <BottomTabs />
+    <NavigationContainer >
+      <RootStack />
+      <NowPlayingDrawer />
     </NavigationContainer>
-        <NowPlayingDrawer />
-    </>
   );
 }

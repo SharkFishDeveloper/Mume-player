@@ -13,12 +13,13 @@ import Songs from "../components/Songs";
 import Artists from "../components/Artists";
 import Albums from "../components/Albums";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useThemeStore } from "../store/useThemeStore";
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<string>(TABSEnum.Suggested);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const isDark = useThemeStore((s) => s.isDark);
 
 
   const closeSearch = () => {
@@ -39,9 +40,13 @@ export default function HomeScreen() {
                 size={22}
                 color="#F97316"
               />
-              <Text className="text-2xl font-bold text-black dark:text-white">
-                Mume
-              </Text>
+               <Text
+            className={`text-2xl font-bold ${
+              isDark ? "text-white" : "text-black"
+            }`}
+          >
+            Mume
+          </Text>
             </View>
 
             {/* Search Icon */}
