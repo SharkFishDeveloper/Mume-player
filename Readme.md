@@ -127,4 +127,6 @@ This submission includes:
 ---
 
 **Author:** Shahz  
+**Demo video** - https://drive.google.com/file/d/1QEr_SkzzVVWXmLRW3ZvjzQ-kIzQOWcMm/view
+**Apk** - On Github release
 *Built as part of a React Native music streaming assignment. Focus on correctness, architecture, and user experience.*
