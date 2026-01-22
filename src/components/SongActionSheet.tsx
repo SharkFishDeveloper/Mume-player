@@ -5,33 +5,41 @@ import {
   TouchableOpacity,
   Dimensions,
   ScrollView,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useQueueStore } from "../store/useQueueStore";
+import { usePlayerStore } from "../store/usePlayerStore";
 import type { Result } from "../types/saavn";
 import { useEffect, useState, type ComponentProps } from "react";
 import { isFavourite, toggleFavourite } from "../../util/favourite";
+import { addToPlaylist, removeFromPlaylist } from "../storage/playlist";
 
-type ActionKey = "playNext" | "addQueue" | undefined;
+type ActionKey =
+  | "playNext"
+  | "addQueue"
+  | "addPlaylist"
+  | "details"
+  | "delete";
 
 interface Action {
   label: string;
   icon: ComponentProps<typeof Ionicons>["name"];
-  key?: ActionKey;
+  key: ActionKey;
   danger?: boolean;
 }
 
 const actions: Action[] = [
   { label: "Play Next", icon: "play-skip-forward-outline", key: "playNext" },
   { label: "Add to Playing Queue", icon: "list-outline", key: "addQueue" },
-  { label: "Add to Playlist", icon: "add-circle-outline" },
-  { label: "Go to Album", icon: "albums-outline" },
-  { label: "Go to Artist", icon: "person-outline" },
-  { label: "Details", icon: "information-circle-outline" },
-  { label: "Set as Ringtone", icon: "call-outline" },
-  { label: "Add to Blacklist", icon: "close-circle-outline" },
-  { label: "Share", icon: "share-social-outline" },
-  { label: "Delete from Device", icon: "trash-outline", danger: true },
+  { label: "Add to Playlist", icon: "add-circle-outline", key: "addPlaylist" },
+  { label: "Details", icon: "information-circle-outline", key: "details" },
+  {
+    label: "Delete from Device",
+    icon: "trash-outline",
+    key: "delete",
+    danger: true,
+  },
 ];
 
 interface SongActionSheetProps {
@@ -41,25 +49,23 @@ interface SongActionSheetProps {
 }
 
 const SongActionSheet = ({ visible, onClose, song }: SongActionSheetProps) => {
-  const { playNext, addToQueue } = useQueueStore();
-  const [favourite, setFavourite] = useState(false);
+  /* ---------------- hooks (ALWAYS RUN) ---------------- */
 
+  const { playNext, addToQueue } = useQueueStore();
+  const { currentSong, play } = usePlayerStore();
+
+  const [favourite, setFavourite] = useState(false);
   const { height } = Dimensions.get("window");
 
-  // ✅ Hooks must ALWAYS run
   useEffect(() => {
-    if (!song) return;
+    if (!song) {
+      setFavourite(false);
+      return;
+    }
     isFavourite(song.id).then(setFavourite);
   }, [song?.id]);
 
-  // ✅ Safe early return AFTER hooks
-  if (!song) return null;
-
-  const handleAction = (key?: ActionKey) => {
-    if (key === "playNext") playNext(song);
-    if (key === "addQueue") addToQueue(song);
-    onClose();
-  };
+  /* ---------------- helpers ---------------- */
 
   const formatDuration = (seconds: number) => {
     const min = Math.floor(seconds / 60);
@@ -68,7 +74,57 @@ const SongActionSheet = ({ visible, onClose, song }: SongActionSheetProps) => {
   };
 
   const artistName =
-    song.artists?.primary?.[0]?.name ?? "Unknown Artist";
+    song?.artists?.primary?.[0]?.name ?? "Unknown Artist";
+
+  const handleAction = async (key: ActionKey) => {
+    if (!song) return;
+
+    switch (key) {
+      case "playNext":
+        if (!currentSong) {
+          play(song);
+        } else {
+          playNext(song);
+        }
+        break;
+
+      case "addQueue":
+         if (!currentSong) {
+          play(song);
+        } else {
+          playNext(song);
+        }
+        addToQueue(song);
+        Alert.alert("Added to queue");
+        break;
+
+      case "addPlaylist":
+        await addToPlaylist(song);
+        Alert.alert("Added to playlist");
+        break;
+
+      case "details":
+        Alert.alert(
+          "Song Details",
+          `Name: ${song.name}
+Artist: ${artistName}
+Album: ${song.album?.name ?? "—"}
+Year: ${song.year}`
+        );
+        break;
+
+      case "delete":
+        await removeFromPlaylist(song.id);
+        Alert.alert("Removed from playlist");
+        break;
+    }
+
+    onClose();
+  };
+
+  /* ---------------- render ---------------- */
+
+  if (!visible) return null;
 
   return (
     <Modal transparent visible={visible} animationType="slide">
@@ -87,59 +143,62 @@ const SongActionSheet = ({ visible, onClose, song }: SongActionSheetProps) => {
           </View>
 
           {/* Song info */}
-          <View className="py-3 border-b border-gray-200 dark:border-gray-800">
-            <View className="flex-row items-center justify-between">
-              <Text
-                numberOfLines={1}
-                className="flex-1 font-semibold text-black dark:text-white text-lg pr-3"
-              >
-                {song.name}
+          {song && (
+            <View className="py-3 border-b border-gray-200 dark:border-gray-800">
+              <View className="flex-row items-center justify-between">
+                <Text
+                  numberOfLines={1}
+                  className="flex-1 font-semibold text-black dark:text-white text-lg pr-3"
+                >
+                  {song.name}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={async () => {
+                    const newState = await toggleFavourite(song.id);
+                    setFavourite(newState);
+                  }}
+                  hitSlop={10}
+                >
+                  <Ionicons
+                    name={favourite ? "heart" : "heart-outline"}
+                    size={22}
+                    color={favourite ? "#EF4444" : "#9CA3AF"}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <Text className="text-gray-500 text-xs mt-1">
+                {artistName} • {formatDuration(song.duration)}
               </Text>
-
-              <TouchableOpacity
-                onPress={async () => {
-                  const newState = await toggleFavourite(song.id);
-                  setFavourite(newState);
-                }}
-                hitSlop={10}
-              >
-                <Ionicons
-                  name={favourite ? "heart" : "heart-outline"}
-                  size={22}
-                  color={favourite ? "#EF4444" : "#9CA3AF"}
-                />
-              </TouchableOpacity>
             </View>
-
-            <Text className="text-gray-500 text-xs mt-1">
-              {artistName} • {formatDuration(song.duration)}
-            </Text>
-          </View>
+          )}
 
           {/* Actions */}
           <ScrollView showsVerticalScrollIndicator={false}>
-            {actions.map((item) => (
-              <TouchableOpacity
-                key={item.label}
-                onPress={() => handleAction(item.key)}
-                className="flex-row items-center py-3"
-              >
-                <Ionicons
-                  name={item.icon}
-                  size={20}
-                  color={item.danger ? "#EF4444" : "#6B7280"}
-                />
-                <Text
-                  className={`ml-4 text-sm ${
-                    item.danger
-                      ? "text-red-500"
-                      : "text-black dark:text-white"
-                  }`}
+            {song &&
+              actions.map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  onPress={() => handleAction(item.key)}
+                  className="flex-row items-center py-3"
                 >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Ionicons
+                    name={item.icon}
+                    size={20}
+                    color={item.danger ? "#EF4444" : "#6B7280"}
+                  />
+                  <Text
+                    className={`ml-4 text-sm ${
+                      item.danger
+                        ? "text-red-500"
+                        : "text-black dark:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
           </ScrollView>
         </View>
       </TouchableOpacity>

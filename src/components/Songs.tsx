@@ -9,6 +9,7 @@ import { Modal } from "react-native";
 import CircleLoader from "./Loading";
 import SongActionSheet from "./SongActionSheet";
 import { usePlayerStore } from "../store/usePlayerStore";
+import { saveRecentSong } from "../storage/recent";
 
 const Songs = ({searchQuery}:{searchQuery?:string}) => {
     const [songs, setSongs] = useState<any[]>([]);
@@ -150,7 +151,8 @@ const filteredSongs = useMemo(
         {/* Play Button */}
         <TouchableOpacity
           className="w-9 h-9 rounded-full bg-orange-500 items-center justify-center mr-3"
-          onPress={() => {
+          onPress={async() => {
+            await saveRecentSong(item); 
             if (currentSong?.id === item.id) {
               // same song → toggle play / pause
               togglePlay();

@@ -12,6 +12,7 @@ interface QueueState {
   next: () => void;
   previous: () => void;
   currentSong: () => Result | undefined;
+  clearQueue: () => void; // ✅ ADD
 }
 
 export const useQueueStore = create<QueueState>((set, get) => ({
@@ -56,4 +57,10 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     const { queue, currentIndex } = get();
     return queue[currentIndex];
   },
+
+  clearQueue: () =>
+  set({
+    queue: [],
+    currentIndex: -1,
+  }),
 }));
