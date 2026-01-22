@@ -9,13 +9,18 @@ import {
   addRecentArtist,
   getRecentArtists,
 } from "../storage/recent"
+import CircleLoader from './Loading';
+import { usePlayerStore } from "../store/usePlayerStore";
+import { useQueueStore } from "../store/useQueueStore";
 
 
 const SuggestedTab = () => {
-
+  const { play } = usePlayerStore();
+  const { setQueue } = useQueueStore();
   const [recentSongs, setRecentSongs] = useState<any[]>([]);
   const [artists, setArtists] = useState<any[]>([]);
   const [mostPlayed, setMostPlayed] = useState<any[]>([]);
+  const [loading,setLoading] = useState(false)
 
   function mergeWithRecent<T extends { id: string }>(
     recent: T[],
@@ -28,6 +33,7 @@ const SuggestedTab = () => {
 
   useEffect(() => {
   async function loadData() {
+    setLoading(true)
     const storedSongs = await getRecentSongs();
     const storedArtists = await getRecentArtists();
 
@@ -43,10 +49,20 @@ const SuggestedTab = () => {
     setRecentSongs(mergedSongs);
     setArtists(mergedArtists);
     setMostPlayed(apiSongs); // mostPlayed stays pure API
+    setLoading(false)
   }
 
   loadData();
 }, []);
+
+  if(loading){
+    return <CircleLoader/>
+  }
+
+  const handlePlaySong = async (song: any) => {
+  await play(song);
+};
+
 
   return (
     <>
@@ -59,7 +75,11 @@ const SuggestedTab = () => {
         data={recentSongs}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View className="mr-4 w-36">
+  <TouchableOpacity
+    className="mr-4 w-36"
+    onPress={() => handlePlaySong(item)}
+    activeOpacity={0.8}
+  >
             <Image
               source={{ uri: getImage(item) }}
               className="w-36 h-36 rounded-xl"
@@ -73,7 +93,7 @@ const SuggestedTab = () => {
             <Text className="text-gray-500 text-xs">
               {item.primaryArtists}
             </Text>
-          </View>
+          </TouchableOpacity>
         )}
       />
 
@@ -112,7 +132,11 @@ const SuggestedTab = () => {
         data={mostPlayed}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View className="mr-4 w-36">
+  <TouchableOpacity
+    className="mr-4 w-36"
+    onPress={() => handlePlaySong(item)}
+    activeOpacity={0.8}
+  >
             <Image
               source={{ uri: getImage(item) }}
               className="w-36 h-36 rounded-xl"
@@ -126,7 +150,7 @@ const SuggestedTab = () => {
             <Text className="text-gray-500 text-xs">
               {item.primaryArtists}
             </Text>
-          </View>
+          </TouchableOpacity>
         )}
       />
     

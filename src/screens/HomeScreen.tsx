@@ -12,11 +12,14 @@ import SuggestedTab from "../components/SuggestedTab";
 import Songs from "../components/Songs";
 import Artists from "../components/Artists";
 import Albums from "../components/Albums";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<string>(TABSEnum.Suggested);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  
+
 
   const closeSearch = () => {
     setIsSearching(false);
@@ -42,7 +45,9 @@ export default function HomeScreen() {
             </View>
 
             {/* Search Icon */}
-            <TouchableOpacity onPress={() => setIsSearching(true)}>
+            <TouchableOpacity onPress={() => {
+              setIsSearching(true) ; setActiveTab(TABSEnum.Songs)
+            } }>
               <Ionicons
                 name="search-outline"
                 size={22}
@@ -121,7 +126,7 @@ export default function HomeScreen() {
       )}
 
       {!isSearching && activeTab === TABSEnum.Artists && (
-        <Artists searchQuery={searchQuery} />
+        <Artists searchQuery={searchQuery}  />
       )}
 
       {!isSearching && activeTab === TABSEnum.Albums && (
