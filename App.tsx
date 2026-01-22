@@ -1,12 +1,15 @@
 import { NavigationContainer } from "@react-navigation/native";
 import "./global.css";
-import AppNavigator from "./src/navigation/AppNavigator";
 import BottomTabs from "./src/navigation/BottomTabs";
+import NowPlayingDrawer from "./src/components/NowPlayingDrawer";
 
 export default function App() {
   return (
+    <>
     <NavigationContainer>
       <BottomTabs />
     </NavigationContainer>
+        <NowPlayingDrawer />
+    </>
   );
 }

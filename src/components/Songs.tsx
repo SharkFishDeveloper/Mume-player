@@ -7,6 +7,8 @@ import { getRecentSongs } from "../storage/recent";
 import FILTER_OPTIONS from "../../util/ApplyFilters";
 import { Modal } from "react-native";
 import CircleLoader from "./Loading";
+import SongActionSheet from "./SongActionSheet";
+import { usePlayerStore } from "../store/usePlayerStore";
 
 const Songs = ({searchQuery}:{searchQuery?:string}) => {
     const [songs, setSongs] = useState<any[]>([]);
@@ -14,6 +16,8 @@ const Songs = ({searchQuery}:{searchQuery?:string}) => {
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [debouncedQuery, setDebouncedQuery] =  useState<string|undefined>("");
     const [loading,setLoading] = useState(false);
+    const [showSheet, setShowSheet] = useState(false);
+    const [selectedSong, setSelectedSong] = useState(null);
 
     function mergeWithRecent<T extends { id: string }>(
       recent: T[],
@@ -103,7 +107,8 @@ const filteredSongs = useMemo(
       loadData();
   }, [debouncedQuery]);
 
-  
+
+  const { play, togglePlay, currentSong, isPlaying } = usePlayerStore();
   
   const renderItem = ({ item }: { item: any }) => {
     const durationMin = Math.floor(Number(item.duration) / 60);
@@ -121,10 +126,14 @@ const filteredSongs = useMemo(
         />
 
         {/* Song Info */}
-        <View className="flex-1 ml-4">
+        <TouchableOpacity className="flex-1 ml-4" onPress={() => {
+            setSelectedSong(item);
+            setShowSheet(true);
+          }}>
           <Text
             numberOfLines={1}
             className="text-black dark:text-white font-semibold"
+             
           >
             {item.name}
           </Text>
@@ -136,11 +145,28 @@ const filteredSongs = useMemo(
               .toString()
               .padStart(2, "0")} mins
           </Text>
-        </View>
+        </TouchableOpacity>
 
         {/* Play Button */}
-        <TouchableOpacity className="w-9 h-9 rounded-full bg-orange-500 items-center justify-center mr-3">
-          <Ionicons name="play" size={16} color="white" />
+        <TouchableOpacity
+          className="w-9 h-9 rounded-full bg-orange-500 items-center justify-center mr-3"
+          onPress={() => {
+            if (currentSong?.id === item.id) {
+              // same song → toggle play / pause
+              togglePlay();
+            } else {
+              // different song → start playing
+              play(item);
+            }
+          }}
+        >
+          <Ionicons
+            name={
+              currentSong?.id === item.id && isPlaying ? "pause" : "play"
+            }
+            size={16}
+            color="white"
+          />
         </TouchableOpacity>
 
         {/* More Icon */}
@@ -228,8 +254,13 @@ const filteredSongs = useMemo(
           </View>
         </TouchableOpacity>
       </Modal>
-    </View>
-  );
+      <SongActionSheet
+        visible={showSheet}
+        song={selectedSong}
+        onClose={() => setShowSheet(false)}
+      />
+          </View>
+        );
 };
 
 export default Songs;
