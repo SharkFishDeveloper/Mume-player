@@ -1,5 +1,7 @@
 # Mume – Music Streaming App
 
+**Apk in realeases on GITHUB**
+
 A modern music streaming application built with **React Native (Expo)** and the **JioSaavn public API**. This project emphasizes clean architecture, predictable state management, and a polished UI based on the provided Figma design reference.
 
 ---
